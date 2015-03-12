@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style type="text/css">
+      html, body, #map-canvas { height: 90%; margin-top: 80px; padding: 0;}
+    </style>
+    <script async src='js/jquery-2.1.3.min.js'></script>
+
+    <script async src='js/knockout-3.3.0.js'></script>
+    <script type="text/javascript"
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBIAZW4zg8HWHJwIN242AFGSL-glwbMJ10">
+    </script>
+
+    <script type="text/javascript">
+// I hate OAuth, and doing it in javascript without a server side component sucks. :(
+    var foursquare_id = 'YWBKRPNXOE4SN33513H4UGCQPQUT1NN1D0QXAQIAT5W2MATE';
+    var foursquare_secret = 'TMFFBFDHWRAJT4OT44ARVBSUYEXFYVWV1YKD4WF32NRCLGKI';
+    var foursquare_version = '20130815';
+
+    var url = 'https://api.foursquare.com/v2/venues/search?client_id='+foursquare_id+'&client_secret='+foursquare_secret+'&v='+foursquare_version;
+
+
+
+
+    function fetch_data(loc, map, marker) {
+        url += '&ll='+loc.position.lat+','+loc.position.lng+'&query='+loc.title;
+        console.log(url);
+        $.ajax({
+            url: url,
+            type: 'GET'
+        }).done(function(json_response) {
+            var data = json_response.response;
+            var venues = data.venues;
+            for (var i = 0; i < venues.length; i++) {
+                var venue = venues[i];
+                if (venue.name === loc.title) {
+                    var content = generate_content(venue);
+
+                    var infowindow = new google.maps.InfoWindow({
+                        content: content
+                    });
+                    infowindow.open(map,marker);
+                }
+            }
+        }).error(function(err) {
+            console.log(err);
+        });
+    }
+
+    function generate_content(venue) {
+
+        var content = "<h3>"+venue.name+"</h3>";
+        if (venue.url) {
+            content += "<h4><a href='"+venue.url+"' target='someOtherWindow'>"+venue.url+"</a></h4>";
+        }
+        content += "<div>Current check-ins: "+venue.hereNow.count+"</div> \
+        <div>Total Check ins: "+venue.stats.checkinsCount+"</div> \
+        <div>User count: "+venue.stats.usersCount+"</div>";
+        if (venue.contact.twitter) {
+            content += "<div><a href='http://twitter.com/"+venue.contact.twitter+"' target='someOtherWindow'>Twitter: "+venue.contact.twitter+"</a></div>";
+        }
+        return content;
+    }
+
+
+    // Map stuff
+      function initialize() {
+        var myStyles =[{
+            featureType: "poi",
+            elementType: "labels",
+            stylers: [
+                  { visibility: "off" }
+            ]
+        }];
+        var mapOptions = {
+          center: { lat: 36.172777, lng: -115.141966},
+          zoom: 17,
+          styles: myStyles
+        };
+
+
+        var locations = [
+            {
+                "position": { "lat": 36.172477, "lng": -115.139366 },
+                "title": "Zappos.com",
+                "description": "Zappos Headquarters, in the old city hall building.",
+                "category": [ "Cool Places" ]
+            },
+            {
+                "position": { "lat": 36.169229, "lng": -115.140390 },
+                "title": "Park on Fremont",
+                "description": "Good food and a bar",
+                "categories": [ "Restaurant", "Bar" ]
+            }
+        ];
+
+        function generateLocationLink(loc) {
+            var div = document.createElement('div');
+            var text = document.createTextNode(loc.title);
+            var a = document.createElement('a');
+            a.appendChild(text);
+            a.setAttribute('href','javascript: void(0)');
+            div.appendChild(a);
+            return div;
+        }
+
+        function createMarker(loc) {
+            return new google.maps.Marker({
+                position: loc.position,
+                map: map,
+                title: loc.title
+            });
+        }
+
+        function createTitleWindow(loc) {
+            return new google.maps.InfoWindow({
+                content: "<span>"+loc.title+"</span>"
+            });    
+        }
+
+        function createInfoWindow(loc) {
+            return new google.maps.InfoWindow({
+                content: "<span>"+loc.description+"</span>"
+            });
+        }
+
+        var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
+        for (var i = 0; i < locations.length; i++) {
+            var loc = locations[i];
+
+            var marker = createMarker(loc);
+            
+            var titlewindow = createTitleWindow(loc);
+
+            // Mouseover event for showing the title
+            google.maps.event.addListener(marker, 'mouseover', (function(thisWindow, thisMarker) {
+                return function() {
+                    thisWindow.open(map,thisMarker);
+                }
+            })(titlewindow,marker));
+
+            // Mouseout event for hiding the title
+            google.maps.event.addListener(marker, 'mouseout', (function(thisWindow, thisMarker) {
+                return function() {
+                    thisWindow.close(map,thisMarker);
+                }
+            })(titlewindow,marker));
+
+            // Click event for showing the description
+            // TODO: Change this to load yelp reviews
+            google.maps.event.addListener(marker, 'click', (function(thisWindow, thisMarker, myLoc) {
+                // Also trigger list of left nav options
+                var leftNav = document.getElementsByClassName('leftNav')[0];
+                var navLink = generateLocationLink(myLoc);
+                leftNav.appendChild(navLink);
+                console.log(navLink);
+                $(navLink).click(function() {
+                    console.log("Clicked");
+                    fetch_data(myLoc, map, thisMarker, thisWindow);
+                });
+
+                
+                return function() {
+                    thisWindow.close(map,thisMarker);
+
+                    fetch_data(myLoc, map, thisMarker, thisWindow);
+
+
+
+                    // var infowindow = new google.maps.InfoWindow({
+                    //     content: "<span>"+myLoc.description+"</span>"
+                    // });
+                    // infowindow.open(map,thisMarker);
+                }
+            })(titlewindow, marker, loc));
+        }
+    }
+    google.maps.event.addDomListener(window, 'load', initialize);
+
+
+    </script>
+    <style>
+        .leftNav { position: absolute; width: 14%; min-width: 120px;}
+        #map-canvas { margin-left: 12%;  }
+    </style>
+  </head>
+  <body>
+
+
+        <div class="leftNav">
+            left nav
+        </div>
+        <div id="map-canvas"></div>
+    
+  </body>
+</html>
