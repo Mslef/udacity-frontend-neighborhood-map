@@ -17,12 +17,15 @@
     var foursquare_secret = 'TMFFBFDHWRAJT4OT44ARVBSUYEXFYVWV1YKD4WF32NRCLGKI';
     var foursquare_version = '20130815';
 
-    var url = 'https://api.foursquare.com/v2/venues/search?client_id='+foursquare_id+'&client_secret='+foursquare_secret+'&v='+foursquare_version;
+    
+    var infowindow = null;
 
+    // Take a look at Places API through Google
 
 
 
     function fetch_data(loc, map, marker) {
+        var url = 'https://api.foursquare.com/v2/venues/search?client_id='+foursquare_id+'&client_secret='+foursquare_secret+'&v='+foursquare_version;
         url += '&ll='+loc.position.lat+','+loc.position.lng+'&query='+loc.title;
         console.log(url);
         $.ajax({
@@ -35,8 +38,10 @@
                 var venue = venues[i];
                 if (venue.name === loc.title) {
                     var content = generate_content(venue);
-
-                    var infowindow = new google.maps.InfoWindow({
+                    if (infowindow) {
+                        infowindow.close();
+                    }
+                    infowindow = new google.maps.InfoWindow({
                         content: content
                     });
                     infowindow.open(map,marker);
@@ -118,12 +123,6 @@
             });    
         }
 
-        function createInfoWindow(loc) {
-            return new google.maps.InfoWindow({
-                content: "<span>"+loc.description+"</span>"
-            });
-        }
-
         var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
         for (var i = 0; i < locations.length; i++) {
             var loc = locations[i];
@@ -156,6 +155,7 @@
                 console.log(navLink);
                 $(navLink).click(function() {
                     console.log("Clicked");
+                    console.log(myLoc);
                     fetch_data(myLoc, map, thisMarker, thisWindow);
                 });
 
