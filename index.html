@@ -95,11 +95,12 @@
             }
         ];
 
-        function Marker(position, title, description) {
+        function Marker(position, title, description, markerObject) {
             var self = this;
             self.position = position;
             self.title = title;
             self.description = description;
+            self.markerObject = markerObject;
         }
 
         function MarkersViewModel() {
@@ -112,9 +113,10 @@
 
             self.locations = ko.observableArray();
             for (var i = 0; i < importantLocations.length; i++) {
-                var marker = new Marker(importantLocations[i].position, importantLocations[i].title, importantLocations[i].description);
+                var marker = new Marker(importantLocations[i].position, importantLocations[i].title, importantLocations[i].description, createMarker(importantLocations[i]));
                 self.locations.push(marker);
-                generateMarker(importantLocations[i]);
+
+                // generateMarker(importantLocations[i]);
 
             }
 
@@ -127,8 +129,25 @@
                 });
             })
             console.log(self.currentLocations());
+            function setAllMap(myMap) {
+                for (var i = 0; i < self.currentLocations().length; i++) {
+                    self.currentLocations()[i].markerObject.setMap(myMap);
+                    if (map != null) {
+                        generateMarker(self.currentLocations()[i]);
+                    }
+                }
+            }
+
+            // Clear all markers
+            function clearMarker() {
+                setAllMap(null);
+            }
+            setAllMap(map);
         }
         ko.applyBindings(new MarkersViewModel());
+
+            // Set all the markers
+
 
         function generateLocationLink(loc) {
             var div = document.createElement('div');
@@ -157,7 +176,7 @@
 
 
         function generateMarker(loc) {
-            var marker = createMarker(loc);
+            // var marker = createMarker(loc);
             
             var titlewindow = createTitleWindow(loc);
 
@@ -208,7 +227,6 @@
         .leftNav { width: 10%; min-width: 120px;}
         #map-canvas { margin-left: 10%; margin-top: 50px; height: 90%; }
         .header { background-color: lightgrey; height: 50px; width: 100%; position: absolute; left: 0px; top: 0px;}
-
         .column { display: table-cell; }
         #container { width: 100%; height: 100%; display: table; margin-top: 50px;}
     </style>
@@ -225,7 +243,7 @@
     <div id="container">
         <div class="leftNav column">
             <ul data-bind='foreach: currentLocations'>
-                <li><span data-bind='text: title'></span></li>
+                <li><a href='#'><span data-bind='text: title'></span></a></li>
             </ul>
         </div>
         <div id="map-canvas" class='column'></div>
