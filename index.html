@@ -20,8 +20,6 @@
 
     // Take a look at Places API through Google
 
-
-
     function fetch_data(loc, map, marker) {
         var url = 'https://api.foursquare.com/v2/venues/search?client_id='+foursquare_id+'&client_secret='+foursquare_secret+'&v='+foursquare_version;
         url += '&ll='+loc.position.lat+','+loc.position.lng+'&query='+loc.title;
@@ -95,8 +93,6 @@
         };
         map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
 
-
-
         function Marker(position, title, marker) {
             var self = this;
             self.position = position;
@@ -122,63 +118,45 @@
                     }
                 });
             })
-            function setAllMap(myMap) {
+
+            // Watch currentLocations for a change
+            // If it has, redraw the map
+            self.currentLocations.subscribe(function() {
+                infowindow.close();
+                for (var i = 0; i < self.locations().length; i++) {
+                    var marker = self.locations()[i].marker;
+                    marker.setMap(null);  
+                }
                 for (var i = 0; i < self.currentLocations().length; i++) {
                     var marker = self.currentLocations()[i].marker;
-                    marker.setMap(myMap);
-                    if (map != null) {
+                    
+                        marker.setMap(map);
                         generateMarker(self.currentLocations()[i]);
-                    }
+                    
                 }
-            }
-
+            });
+            
             self.show_marker = function(place) {
                 console.log(place.marker);
                 google.maps.event.trigger(place.marker,'click');
-            }
-
-            // Clear all markers
-            function clearMarker() {
-                setAllMap(null);
-            }
-
-            // Set all markers
-            function setMarker() {
-                setAllMap(map);
-            }
-            setMarker(map);
+            }   
         }
-
         ko.applyBindings(new MarkersViewModel());
 
-            // Set all the markers
-            function createMarker(loc) {
-                return new google.maps.Marker({
-                    position: loc.position,
-                    map: map,
-                    title: loc.title
-                });
-            }
-
-        function generateLocationLink(loc) {
-            var div = document.createElement('div');
-            var text = document.createTextNode(loc.title);
-            var a = document.createElement('a');
-            a.appendChild(text);
-            a.setAttribute('href','javascript: void(0)');
-            div.appendChild(a);
-            return div;
+        // Set all the markers
+        function createMarker(loc) {
+            return new google.maps.Marker({
+                position: loc.position,
+                map: map,
+                title: loc.title
+            });
         }
-
-
 
         function createTitleWindow(loc) {
             return new google.maps.InfoWindow({
                 content: "<span>"+loc.title+"</span>"
             });    
         }
-
-
 
         function generateMarker(loc) {            
             var titlewindow = createTitleWindow(loc);
@@ -202,8 +180,6 @@
                 fetch_data(loc, map, marker, titlewindow);
             });
         }
-        
-        
     }
     google.maps.event.addDomListener(window, 'load', initialize);
 
