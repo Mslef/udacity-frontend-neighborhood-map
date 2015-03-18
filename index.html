@@ -122,7 +122,9 @@
             // Watch currentLocations for a change
             // If it has, redraw the map
             self.currentLocations.subscribe(function() {
-                infowindow.close();
+                if (infowindow) {
+                    infowindow.close();
+                }
                 for (var i = 0; i < self.locations().length; i++) {
                     var marker = self.locations()[i].marker;
                     marker.setMap(null);  
