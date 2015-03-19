@@ -104,12 +104,8 @@
             var self = this;
 
             self.searchTerm = ko.observable("");
-
             self.locations = ko.observableArray();
-            for (var i = 0; i < importantLocations.length; i++) {
-                var marker = new Marker(importantLocations[i].position, importantLocations[i].title, createMarker(importantLocations[i]));
-                self.locations.push(marker);
-            }
+
 
             self.currentLocations = ko.computed(function() {
                 return ko.utils.arrayFilter(self.locations(), function(loc) {
@@ -117,7 +113,21 @@
                         return loc;
                     }
                 });
-            })
+            });
+
+            for (var i = 0; i < importantLocations.length; i++) {
+                var marker = new Marker(importantLocations[i].position, importantLocations[i].title, createMarker(importantLocations[i]));
+                self.locations.push(marker);
+            }
+
+            function setMapMarkers() {
+                for (var i = 0; i < self.currentLocations().length; i++) {
+                    var marker = self.currentLocations()[i].marker;
+                        marker.setMap(map);
+                        generateMarker(self.currentLocations()[i]);                    
+                }
+            }
+
 
             // Watch currentLocations for a change
             // If it has, redraw the map
@@ -129,17 +139,13 @@
                     var marker = self.locations()[i].marker;
                     marker.setMap(null);  
                 }
-                for (var i = 0; i < self.currentLocations().length; i++) {
-                    var marker = self.currentLocations()[i].marker;
-                    
-                        marker.setMap(map);
-                        generateMarker(self.currentLocations()[i]);
-                    
-                }
+                setMapMarkers();
             });
             
+            // Set map markers initially, so the click events work.
+            setMapMarkers();
+
             self.show_marker = function(place) {
-                console.log(place.marker);
                 google.maps.event.trigger(place.marker,'click');
             }   
         }
